@@ -1,0 +1,5 @@
+/target
+/challenges
+.idea
+Cargo.lock
+*/target/*
