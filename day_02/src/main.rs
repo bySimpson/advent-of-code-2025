@@ -1,6 +1,6 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::ops::ControlFlow;
+use std::ops::{ControlFlow};
 use clap::{arg, Parser};
 use anyhow::{Result};
 use std::string::String;
@@ -21,16 +21,14 @@ fn main() -> Result<()> {
     let file = File::open(args.path)?;
     let reader = BufReader::new(file);
 
-    let mut iters = Vec::new();
-    for line in reader.lines().map_while(Result::ok) {
-        line.split(',').for_each(|range| {
-            let mut from_to = range.split('-');
-            iters.push(from_to.next().unwrap().parse::<u64>().unwrap()..=from_to.next().unwrap().parse::<u64>().unwrap());
-        })
-    }
+    let line = reader.lines().next().unwrap()?;
+    let iters: Vec<_> = line.split(',').map(|range| {
+        let mut from_to = range.split('-');
+        from_to.next().unwrap().parse::<u64>().unwrap()..=from_to.next().unwrap().parse::<u64>().unwrap()
+    }).collect();
 
-    let part1 = iters.par_iter().fold(|| 0u64, |acc, iter| {
-        iter.clone().filter(|number| {
+    let part1 = iters.clone().into_par_iter().fold(|| 0u64, |acc, iter| {
+        iter.filter(|number| {
             // get number of digits
             let digits = number.checked_ilog10().unwrap_or(0) + 1;
             // Only account for symmetric numbers
@@ -66,7 +64,7 @@ fn main() -> Result<()> {
                     // compare if newly constructed number matches
                     if compare_to == *number {
                         if args.debug {
-                            println!("{} ({}) ({})", number, compare_to, first_part);
+                            println!("Found {} ({})", number, first_part);
                         }
                         // early break
                         return ControlFlow::Break(true);
