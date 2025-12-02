@@ -28,21 +28,23 @@ fn main() -> Result<()> {
         })
     }
 
-    let part1 = iters.into_iter().flatten().filter(|number| {
-        // get number of digits
-        let digits = number.checked_ilog10().unwrap_or(0) + 1;
-        // Only account for symmetric numbers
-        if digits % 2 == 0 {
-            // Get first half of number
-            let first_half = number / 10u64.pow(digits / 2);
-            // Get second half of number
-            let second_half = number - first_half * 10u64.pow(digits / 2);
-            if first_half == second_half {
-                return true;
+    let part1 = iters.par_iter().fold(|| 0u64, |acc, iter| {
+        iter.clone().filter(|number| {
+            // get number of digits
+            let digits = number.checked_ilog10().unwrap_or(0) + 1;
+            // Only account for symmetric numbers
+            if digits % 2 == 0 {
+                // Get first half of number
+                let first_half = number / 10u64.pow(digits / 2);
+                // Get second half of number
+                let second_half = number - first_half * 10u64.pow(digits / 2);
+                if first_half == second_half {
+                    return true;
+                }
+                return false;
             }
-            return false;
-        }
-        false
+            false
+        }).sum::<u64>() + acc
     }).sum::<u64>();
 
 
