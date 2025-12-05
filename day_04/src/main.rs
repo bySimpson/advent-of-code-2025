@@ -6,6 +6,7 @@ use rayon::prelude::*;
 use std::fs;
 use std::string::String;
 use std::time::Instant;
+use clap::builder::styling::AnsiColor::Magenta;
 use crate::field::Field;
 
 #[derive(Parser, Clone)]
@@ -115,14 +116,21 @@ fn main() {
     }).collect::<Vec<Vec<Field>>>();
 
     let parse_duration = parse_time.elapsed();
-
     let calc_time = Instant::now();
+    let part1_time = Instant::now();
 
-    println!("Part 1: {}", part1(&mut input.clone()));
-    println!("Part 2: {}", part2(&mut input));
+    let part1 = part1(&mut input.clone());
+    let par1_duration = part1_time.elapsed();
 
+    let part2_time = Instant::now();
+    let part2 = part2(&mut input);
+
+    let part2_duration = part2_time.elapsed();
     let calc_duration = calc_time.elapsed();
-
     let total_duration = total_time.elapsed();
-    println!("Perf - Total: {:?}, Parsing: {:?}, Calculation: {:?}", total_duration, parse_duration, calc_duration);
+
+    println!("Part 1 ({:?}): {}", par1_duration, part1);
+    println!("Part 2 ({:?}): {}", part2_duration, part2);
+
+    println!("Perf - Total: {:?}, Parsing: {:?}, Calculation total: {:?}", total_duration, parse_duration, calc_duration);
 }

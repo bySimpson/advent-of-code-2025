@@ -4,6 +4,7 @@ use std::ops::{ControlFlow};
 use clap::{arg, Parser};
 use anyhow::{Result};
 use std::string::String;
+use std::time::Instant;
 use rayon::prelude::*;
 
 #[derive(Parser, Debug)]
@@ -17,7 +18,10 @@ struct Args {
 
 
 fn main() -> Result<()> {
+    let total_time = Instant::now();
     let args = Args::parse();
+
+    let parse_time = Instant::now();
     let file = File::open(args.path)?;
     let reader = BufReader::new(file);
 
@@ -26,6 +30,10 @@ fn main() -> Result<()> {
         let mut from_to = range.split('-');
         from_to.next().unwrap().parse::<u64>().unwrap()..=from_to.next().unwrap().parse::<u64>().unwrap()
     }).collect();
+
+    let parse_duration = parse_time.elapsed();
+    let calc_time = Instant::now();
+    let part1_time = Instant::now();
 
     let part1 = iters.clone().into_par_iter().fold(|| 0u64, |acc, iter| {
         iter.filter(|number| {
@@ -45,6 +53,10 @@ fn main() -> Result<()> {
             false
         }).sum::<u64>() + acc
     }).sum::<u64>();
+
+    let par1_duration = part1_time.elapsed();
+
+    let part2_time = Instant::now();
 
     let part2 = iters.into_par_iter().fold(|| 0u64, |acc, iter| {
         iter.filter(|number| {
@@ -78,9 +90,14 @@ fn main() -> Result<()> {
         }).sum::<u64>() + acc
     }).sum::<u64>();
 
+    let part2_duration = part2_time.elapsed();
+    let calc_duration = calc_time.elapsed();
+    let total_duration = total_time.elapsed();
 
-    println!("Part 1: {}", part1);
+    println!("Part 1 ({:?}): {}", par1_duration, part1);
+    println!("Part 2 ({:?}): {}", part2_duration, part2);
 
-    println!("Part 2: {}", part2);
+    println!("Perf - Total: {:?}, Parsing: {:?}, Calculation total: {:?}", total_duration, parse_duration, calc_duration);
+
     Ok(())
 }

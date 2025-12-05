@@ -42,6 +42,7 @@ fn main() {
 
     let parse_duration = parse_time.elapsed();
     let calc_time = Instant::now();
+    let part1_time = Instant::now();
 
     let part1 = food.iter().filter(|c_food| {
         for c_range in &good_food_ranges {
@@ -52,6 +53,9 @@ fn main() {
         false
     }).count();
 
+    let par1_duration = part1_time.elapsed();
+
+    let part2_time = Instant::now();
     let mut ranges_sorted= good_food_ranges;
     ranges_sorted.sort_by_key(|i| *i.start());
 
@@ -78,11 +82,12 @@ fn main() {
         c_iter.end() - c_iter.start() + 1
     }).sum::<u64>();
 
-    println!("Part 1: {}", part1);
-    println!("Part 2: {}", part2);
-
+    let part2_duration = part2_time.elapsed();
     let calc_duration = calc_time.elapsed();
-
     let total_duration = total_time.elapsed();
-    println!("Perf - Total: {:?}, Parsing: {:?}, Calculation: {:?}", total_duration, parse_duration, calc_duration);
+
+    println!("Part 1 ({:?}): {}", par1_duration, part1);
+    println!("Part 2 ({:?}): {}", part2_duration, part2);
+
+    println!("Perf - Total: {:?}, Parsing: {:?}, Calculation total: {:?}", total_duration, parse_duration, calc_duration);
 }

@@ -36,13 +36,14 @@ fn main() {
     }).reduce(|| (0, 0), |acc, item| {
         (acc.0 + item.0, acc.1 + item.1)
     });
+    
     let calc_duration = calc_time.elapsed();
-
-    println!("Part 1: {}", part1);
-    println!("Part 2: {}", part2);
-
     let total_duration = total_time.elapsed();
-    println!("Perf - Total: {:?}, Parsing: {:?}, Calculation: {:?}", total_duration, parse_duration, calc_duration);
+
+    println!("Part 1 {}", part1);
+    println!("Part 2 {}", part2);
+
+    println!("Perf - Total: {:?}, Parsing: {:?}, Calculation total: {:?}", total_duration, parse_duration, calc_duration);
 }
 
 fn calculate_joltage(line: &[u32], battery_amount: usize) -> u32 {
