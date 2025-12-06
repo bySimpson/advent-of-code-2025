@@ -1,13 +1,12 @@
 mod operation;
 
 use clap::{arg, Parser};
-use itertools::Itertools;
 use std::fs;
 use std::ops::ControlFlow;
 use std::ops::ControlFlow::Continue;
 use std::string::String;
 use std::time::Instant;
-use crate::operation::Operation;
+use crate::operation::{Alignment, Operation};
 
 #[derive(Parser, Clone)]
 #[command(author, version, about, long_about = None)]
@@ -26,10 +25,11 @@ fn main() {
 
     let mut operations = Vec::new();
     let operations_len = read.lines().next().unwrap().split_whitespace().count();
+    let len_y = read.lines().count();
     let mut numbers: Vec<Vec<u64>>  = vec![Vec::new(); operations_len];
-    read.lines().rev().enumerate().for_each(|(iter, line)| {
+    read.lines().enumerate().for_each(|(iter, line)| {
         let pieces = line.split_whitespace();
-        if iter == 0 {
+        if iter == len_y - 1 {
             for piece in pieces {
                 operations.push(Operation::new(piece));
             }
@@ -38,6 +38,26 @@ fn main() {
                 numbers[i].push(piece.parse::<u64>().unwrap());
             }
         }
+    });
+
+    //preparations for part 2
+    let mut operation_alignment = Vec::new();
+    let _: ControlFlow<()> = read.lines().last().unwrap().chars().enumerate().try_for_each(|(iter, char)| {
+        if char.is_whitespace() {
+            return Continue(());
+        }
+        for (line_nmbr, c_line) in read.lines().enumerate() {
+            if line_nmbr == len_y - 1 {
+                // Last line, left alignment
+                operation_alignment.push(Alignment::Left);
+                break;
+            }
+            if c_line.as_bytes()[iter] == " ".as_bytes()[0] {
+                operation_alignment.push(Alignment::Right);
+                break;
+            }
+        }
+        Continue(())
     });
 
 
@@ -54,7 +74,10 @@ fn main() {
 
     let part2_time = Instant::now();
 
-    let part2 = 0;
+    let part2 = numbers.iter().enumerate().map(|(iter, numbers)| {
+        let operation = operations.get(iter).unwrap();
+        operation.calculate_part_02(numbers, operation_alignment[iter])
+    }).sum::<u64>();
 
     let part2_duration = part2_time.elapsed();
     let calc_duration = calc_time.elapsed();
