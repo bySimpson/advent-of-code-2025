@@ -2,7 +2,7 @@ use std::fmt::{Display, Formatter};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Field {
-    Beam,
+    Beam(u64),
     Splitter,
     Space
 }
@@ -10,7 +10,7 @@ pub enum Field {
 impl Field {
     pub fn new(character: char) -> Field {
         match character {
-            'S' => Field::Beam,
+            'S' => Field::Beam(1),
             '.' => Field::Space,
             '^' => Field::Splitter,
             _ => panic!("Unknown field: {}", character)
@@ -23,7 +23,7 @@ impl Display for Field {
         match self { 
             Field::Splitter => write!(f, "^"),
             Field::Space => write!(f, "."),
-            Field::Beam => write!(f, "|"),
+            Field::Beam(_) => write!(f, "|"),
         }
     }
 }
