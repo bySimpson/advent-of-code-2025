@@ -2,10 +2,9 @@ mod orientation;
 
 use clap::{Parser, arg};
 use itertools::Itertools;
-use ordered_float::OrderedFloat;
-use std::collections::HashMap;
+use std::collections::HashSet;
+use rayon::prelude::*;
 use std::fs;
-use std::ops::ControlFlow;
 use std::string::String;
 use std::time::Instant;
 use crate::orientation::Orientation;
@@ -23,11 +22,6 @@ fn cube_area(a: &(u64, u64), b: &(u64, u64)) -> u64 {
     (a.0.abs_diff(b.0) + 1) * (a.1.abs_diff(b.1) + 1)
 }
 
-fn cross(a: (u64, u64), b: (u64, u64)) -> u64 {
-    //v.x * w.y - v.y * w.x
-    a.0 * b.1 - a.1 * b.0
-}
-
 fn part1(input: &[(u64, u64)]) -> u64 {
     input
         .iter()
@@ -39,33 +33,15 @@ fn part1(input: &[(u64, u64)]) -> u64 {
         }).max().unwrap()
 }
 
-fn lines_intersect(line_a: ((u64, u64), (u64, u64)), line_b: ((u64, u64), (u64, u64))) -> bool {
-    let orientation_a = Orientation::from_line(line_a);
-    let orientation_b = Orientation::from_line(line_b);
-    if orientation_a == orientation_b {
-        return false;
-    }
-
-    match orientation_a {
-
-        Orientation::Horizontal => {
-            let line_b_min_y = line_b.0.1.min(line_b.1.1);
-            let line_b_max_y = line_b.0.1.max(line_b.1.1);
-
-            let line_a_min_x = line_a.0.0.min(line_a.1.0);
-            let line_a_max_x = line_a.0.0.max(line_a.1.0);
-
-            line_a.0.1 > line_b_min_y && line_a.0.1 < line_b_max_y && line_b.0.0 > line_a_min_x && line_b.0.0 < line_a_max_x
-        }
-        Orientation::Vertical => {
-            let line_b_min_x = line_b.0.0.min(line_b.1.0);
-            let line_b_max_x = line_b.0.0.max(line_b.1.0);
-
-            let line_a_min_y = line_b.0.1.min(line_b.1.1);
-            let line_a_max_y = line_b.0.1.max(line_b.1.1);
-            line_a.0.0 > line_b_min_x && line_a.0.0 < line_b_max_x && line_b.0.1 > line_a_min_y && line_b.0.1 < line_a_max_y
-        }
-    }
+fn point_within(rectangle: ((u64, u64), (u64, u64)), point: (u64, u64)) -> bool {
+    let left_x = rectangle.0.0.min(rectangle.1.0);
+    let right_x = rectangle.0.0.max(rectangle.1.0);
+    let top_y = rectangle.0.1.max(rectangle.1.1);
+    let bottom_y = rectangle.0.1.min(rectangle.1.1);
+    point.0 > left_x
+        && point.0 < right_x
+        && point.1 > bottom_y
+        && point.1 < top_y
 }
 
 fn part2(input: &mut [(u64, u64)]) -> u64 {
@@ -77,26 +53,38 @@ fn part2(input: &mut [(u64, u64)]) -> u64 {
     // add last connection to finish area
     connections.push((*input.first().unwrap(), *input.last().unwrap()));
 
+    let mut tiles: HashSet<(u64, u64)> = HashSet::new();
+    connections.iter().for_each(|(a, b)| {
+       let alignment = Orientation::from_line((*a, *b));
+        match alignment {
+            Orientation::Horizontal => {
+                let min_x = a.0.min(b.0) as usize;
+                let max_x = a.0.max(b.0) as usize;
+                (min_x..=max_x).for_each(|x| {
+                    tiles.insert((x as u64, a.1));
+                })
+            }
+            Orientation::Vertical => {
+                let min_y = a.1.min(b.1) as usize;
+                let max_y = a.1.max(b.1) as usize;
+                (min_y..=max_y).for_each(|y| {
+                    tiles.insert((a.0, y as u64));
+                })
+            }
+        }
+    });
+
     input
         .iter()
         .combinations(2)
+        .par_bridge()
         .filter(|combinations| {
             let p1 = combinations[0];
             let p2 = combinations[1];
-
-            //borders do not matter, make rectangle smaller by 1
-            let bottom_left = (p1.0.min(p2.0) + 1, p1.1.min(p2.1) + 1);
-            let top_left = (p1.0.min(p2.0) + 1, p1.1.max(p2.1) - 1);
-            let bottom_right = (p1.0.max(p2.0) - 1, p1.1.min(p2.1) + 1);
-            let top_right = (p1.0.max(p2.0) - 1, p1.1.max(p2.1) - 1);
-
-            !connections.iter().any(|(first, second)| {
-                lines_intersect((bottom_left, bottom_right), (*first, *second)) ||
-                lines_intersect((top_left, top_right), (*first, *second)) ||
-                lines_intersect((bottom_left, top_left), (*first, *second)) ||
-                lines_intersect((bottom_right, top_right), (*first, *second))
+            !tiles.iter().any(|point| {
+                point_within((*p1, *p2), *point)
             })
-        }).inspect(|x| println!("{:?}", x)).map(|combinations| {
+        }).map(|combinations| {
         let p1 = combinations[0];
         let p2 = combinations[1];
         cube_area(p1, p2)
@@ -135,7 +123,7 @@ fn main() {
     let total_duration = total_time.elapsed();
 
     println!("Part 1 ({:?}): {}", par1_duration, part1);
-    println!("Part 2 ({:?}): {}", part2_duration, part2); // 3664486347 - too low
+    println!("Part 2 ({:?}): {}", part2_duration, part2);
 
     println!(
         "Perf - Total: {:?}, Parsing: {:?}, Calculation total: {:?}",
